@@ -10,7 +10,6 @@ import (
 	"github.com/grafana/grafana/pkg/services/alerting"
 	"github.com/grafana/grafana/pkg/services/guardian"
 	"github.com/grafana/grafana/pkg/services/search"
-	"github.com/grafana/grafana/pkg/util"
 )
 
 func ValidateOrgAlert(c *models.ReqContext) {
@@ -288,10 +287,11 @@ func UpdateAlertNotification(c *models.ReqContext, cmd models.UpdateAlertNotific
 	}
 
 	if err := bus.Dispatch(&cmd); err != nil {
-		if err == models.ErrAlertNotificationNotFound {
-			return Error(404, err.Error(), err)
-		}
 		return Error(500, "Failed to update alert notification", err)
+	}
+
+	if cmd.Result == nil {
+		return Error(404, "Alert notification not found", nil)
 	}
 
 	query := models.GetAlertNotificationsQuery{
@@ -316,10 +316,11 @@ func UpdateAlertNotificationByUID(c *models.ReqContext, cmd models.UpdateAlertNo
 	}
 
 	if err := bus.Dispatch(&cmd); err != nil {
-		if err == models.ErrAlertNotificationNotFound {
-			return Error(404, err.Error(), nil)
-		}
 		return Error(500, "Failed to update alert notification", err)
+	}
+
+	if cmd.Result == nil {
+		return Error(404, "Alert notification not found", nil)
 	}
 
 	query := models.GetAlertNotificationsWithUidQuery{
@@ -389,9 +390,6 @@ func DeleteAlertNotification(c *models.ReqContext) Response {
 	}
 
 	if err := bus.Dispatch(&cmd); err != nil {
-		if err == models.ErrAlertNotificationNotFound {
-			return Error(404, err.Error(), nil)
-		}
 		return Error(500, "Failed to delete alert notification", err)
 	}
 
@@ -405,16 +403,10 @@ func DeleteAlertNotificationByUID(c *models.ReqContext) Response {
 	}
 
 	if err := bus.Dispatch(&cmd); err != nil {
-		if err == models.ErrAlertNotificationNotFound {
-			return Error(404, err.Error(), nil)
-		}
 		return Error(500, "Failed to delete alert notification", err)
 	}
 
-	return JSON(200, util.DynMap{
-		"message": "Notification deleted",
-		"id":      cmd.DeletedAlertNotificationId,
-	})
+	return Success("Notification deleted")
 }
 
 //POST /api/alert-notifications/test

@@ -33,17 +33,8 @@ func init() {
 func DeleteAlertNotification(cmd *models.DeleteAlertNotificationCommand) error {
 	return inTransaction(func(sess *DBSession) error {
 		sql := "DELETE FROM alert_notification WHERE alert_notification.org_id = ? AND alert_notification.id = ?"
-		res, err := sess.Exec(sql, cmd.OrgId, cmd.Id)
-		if err != nil {
+		if _, err := sess.Exec(sql, cmd.OrgId, cmd.Id); err != nil {
 			return err
-		}
-		rowsAffected, err := res.RowsAffected()
-		if err != nil {
-			return err
-		}
-
-		if rowsAffected == 0 {
-			return models.ErrAlertNotificationNotFound
 		}
 
 		if _, err := sess.Exec("DELETE FROM alert_notification_state WHERE alert_notification_state.org_id = ? AND alert_notification_state.notifier_id = ?", cmd.OrgId, cmd.Id); err != nil {
@@ -60,17 +51,14 @@ func DeleteAlertNotificationWithUid(cmd *models.DeleteAlertNotificationWithUidCo
 		return err
 	}
 
-	if existingNotification.Result == nil {
-		return models.ErrAlertNotificationNotFound
-	}
-
-	cmd.DeletedAlertNotificationId = existingNotification.Result.Id
-	deleteCommand := &models.DeleteAlertNotificationCommand{
-		Id:    existingNotification.Result.Id,
-		OrgId: existingNotification.Result.OrgId,
-	}
-	if err := bus.Dispatch(deleteCommand); err != nil {
-		return err
+	if existingNotification.Result != nil {
+		deleteCommand := &models.DeleteAlertNotificationCommand{
+			Id:    existingNotification.Result.Id,
+			OrgId: existingNotification.Result.OrgId,
+		}
+		if err := bus.Dispatch(deleteCommand); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -379,10 +367,6 @@ func UpdateAlertNotification(cmd *models.UpdateAlertNotificationCommand) error {
 			return err
 		}
 
-		if current.Id == 0 {
-			return models.ErrAlertNotificationNotFound
-		}
-
 		// check if name exists
 		sameNameQuery := &models.GetAlertNotificationsQuery{OrgId: cmd.OrgId, Name: cmd.Name}
 		if err := getAlertNotificationInternal(sameNameQuery, sess); err != nil {
@@ -449,7 +433,7 @@ func UpdateAlertNotificationWithUid(cmd *models.UpdateAlertNotificationWithUidCo
 	current := getAlertNotificationWithUidQuery.Result
 
 	if current == nil {
-		return models.ErrAlertNotificationNotFound
+		return fmt.Errorf("Cannot update, alert notification uid %s doesn't exist", cmd.Uid)
 	}
 
 	if cmd.NewUid == "" {
