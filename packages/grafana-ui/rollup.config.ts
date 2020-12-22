@@ -16,7 +16,7 @@ const buildCjsPackage = ({ env }) => {
         dir: 'dist',
         name: libraryName,
         format: 'cjs',
-        sourcemap: true,
+        sourcemap: false,
         strict: false,
         exports: 'named',
         chunkFileNames: `[name].${env}.js`,

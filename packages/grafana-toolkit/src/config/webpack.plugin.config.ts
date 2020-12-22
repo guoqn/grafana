@@ -138,7 +138,7 @@ const getBaseWebpackConfig: WebpackConfigurationGetter = async options => {
   const optimization: { [key: string]: any } = {};
 
   if (options.production) {
-    optimization.minimizer = [new TerserPlugin({ sourceMap: true }), new OptimizeCssAssetsPlugin()];
+    optimization.minimizer = [new TerserPlugin({ sourceMap: false }), new OptimizeCssAssetsPlugin()];
   } else if (options.watch) {
     plugins.push(new HtmlWebpackPlugin());
   }

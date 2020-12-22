@@ -12,7 +12,7 @@ const buildCjsPackage = ({ env }) => ({
     file: `dist/index.${env}.js`,
     name,
     format: 'cjs',
-    sourcemap: true,
+    sourcemap: false,
     exports: 'named',
     globals: {},
   },
